@@ -16,9 +16,9 @@ function clickLoadMoreButtons() {
         conversations.forEach(conversation => {
             const showResolvedButton = conversation.querySelector('.Details-content--closed');
             if (showResolvedButton && showResolvedButton.textContent.trim() === 'Show resolved') {
-                const turboFrame = showResolvedButton.closest('turbo-frame');
-                if (turboFrame) {
-                    turboFrame.style.display = 'none';
+                const parentTurboFrame = showResolvedButton.closest('turbo-frame');
+                if (parentTurboFrame) {
+                    parentTurboFrame.style.display = 'none';
                 } else {
                     conversation.style.display = 'none';
                 }
