@@ -33,7 +33,7 @@ function clickLoadMoreButtons() {
     window.observer.observe(document.body, {childList: true, subtree: true});
 
     clickButtons();
-    hideResolvedConversations();
+    //hideResolvedConversations();
 }
 chrome.storage.local.get(['extensionState'], async (result) => {
     const state = result.extensionState || 'OFF';
