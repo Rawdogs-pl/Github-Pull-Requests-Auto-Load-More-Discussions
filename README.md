@@ -7,6 +7,7 @@ Chrome extension that provides advanced batch operations and controls for managi
 - **Auto-expand discussions** – Automatically clicks "Load more..." buttons to reveal all PR comments continuously
 - **Batch resolve discussions** – One-click resolution of all unresolved discussions with intelligent detection
 - **Batch hide comments** – Hide resolved discussions and regular comments with a single click
+- **Request Copilot review** – Trigger Copilot re-request review with smart availability detection
 - **Smart filtering** – Automatically skips PR descriptions and parent elements with unresolved child discussions
 - **Keyboard accessible** – Full keyboard navigation support with visible focus indicators
 - **Reactive updates** – Uses MutationObserver to handle dynamically loaded content efficiently
@@ -58,6 +59,18 @@ Click this button to hide resolved discussions and regular comments by marking t
 - Uses `waitFor` helper for reliable element detection
 - Processes items sequentially with rate limiting (300ms delay)
 - Comprehensive logging for debugging
+
+### Request Copilot review
+
+Click this button to trigger a Copilot re-request review.
+
+**How it works:**
+- Automatically detects the Copilot re-request review button on GitHub PR page
+- Button is only enabled when Copilot re-request is actually available
+- Dynamically monitors DOM changes to update button state in real-time
+- Disabled state is visually indicated (opacity 0.5, cursor not-allowed)
+- Clicks the native GitHub Copilot re-request button when activated
+- Logs actions to console for debugging
 
 ## Technical Details
 
