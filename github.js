@@ -36,45 +36,45 @@ function stopAutoLoadMore() {
 }
 
 function resolveAllDiscussions() {
-    const resolveButtons = document.querySelectorAll('button[name="comment_and_resolve"]');
+    const resolveButtons = document.querySelectorAll('button[value="resolve"], button[name="comment_and_resolve"]');
     let resolvedCount = 0;
 
     resolveButtons.forEach(button => {
-        const container = button.closest('details');
+        const container = button.closest('[data-review-thread="true"]');
         if (container && container.getAttribute('data-resolved') !== 'true') {
             button.click();
             resolvedCount++;
         }
     });
 
+    let iterations = 0;
+    const maxIterations = 20;
+
     const checkForNewDiscussions = setInterval(() => {
-        const newResolveButtons = document.querySelectorAll('button[name="comment_and_resolve"]');
+        iterations++;
+        const newResolveButtons = document.querySelectorAll('button[value="resolve"], button[name="comment_and_resolve"]');
         let newResolved = 0;
 
         newResolveButtons.forEach(button => {
-            const container = button.closest('details');
+            const container = button.closest('[data-review-thread="true"]');
             if (container && container.getAttribute('data-resolved') !== 'true') {
                 button.click();
                 newResolved++;
             }
         });
 
-        if (newResolved === 0) {
+        if (newResolved === 0 || iterations >= maxIterations) {
             clearInterval(checkForNewDiscussions);
         }
     }, 500);
-
-    setTimeout(() => {
-        clearInterval(checkForNewDiscussions);
-    }, 10000);
 
     return resolvedCount;
 }
 
 function hasUnresolvedChildDiscussions(element) {
-    const childDiscussions = element.querySelectorAll('details[data-review-thread="true"]');
+    const childDiscussions = element.querySelectorAll('[data-review-thread="true"]');
     for (let discussion of childDiscussions) {
-        if (discussion.getAttribute('data-resolved') !== 'true') {
+        if (discussion !== element && discussion.getAttribute('data-resolved') !== 'true') {
             return true;
         }
     }
@@ -82,72 +82,79 @@ function hasUnresolvedChildDiscussions(element) {
 }
 
 function setAsHidden() {
-    const discussions = document.querySelectorAll('details[data-review-thread="true"]');
+    const discussions = document.querySelectorAll('[data-review-thread="true"]');
+    const regularComments = document.querySelectorAll('.timeline-comment');
     let hiddenCount = 0;
 
-    discussions.forEach(discussion => {
-        const isResolved = discussion.getAttribute('data-resolved') === 'true';
-        const hasChildren = discussion.querySelector('details[data-review-thread="true"]') !== null;
-
-        if (isResolved || !hasChildren) {
-            if (!hasUnresolvedChildDiscussions(discussion)) {
-                const detailsMenu = discussion.querySelector('details.discussion-timeline-actions');
-                if (detailsMenu) {
-                    if (!detailsMenu.open) {
-                        const summary = detailsMenu.querySelector('summary');
-                        if (summary) {
-                            summary.click();
-
-                            setTimeout(() => {
-                                const hideButton = detailsMenu.querySelector('button[value="hide"]');
-                                if (hideButton) {
-                                    hideButton.click();
-                                    hiddenCount++;
-
-                                    setTimeout(() => {
-                                        const confirmButton = document.querySelector('button[name="comment[state_event]"][value="outdated"]');
-                                        if (confirmButton) {
-                                            confirmButton.click();
-                                        }
-                                    }, 100);
-                                }
-                            }, 100);
-                        }
-                    }
+    const hideElement = async (element, delay = 0) => {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const detailsMenu = element.querySelector('details.discussion-timeline-actions');
+                if (!detailsMenu) {
+                    resolve(false);
+                    return;
                 }
-            }
-        }
-    });
 
-    const regularComments = document.querySelectorAll('.timeline-comment');
-    regularComments.forEach(comment => {
-        if (!hasUnresolvedChildDiscussions(comment)) {
-            const detailsMenu = comment.querySelector('details.discussion-timeline-actions');
-            if (detailsMenu) {
                 if (!detailsMenu.open) {
                     const summary = detailsMenu.querySelector('summary');
-                    if (summary) {
-                        summary.click();
-
-                        setTimeout(() => {
-                            const hideButton = detailsMenu.querySelector('button[value="hide"]');
-                            if (hideButton) {
-                                hideButton.click();
-                                hiddenCount++;
-
-                                setTimeout(() => {
-                                    const confirmButton = document.querySelector('button[name="comment[state_event]"][value="outdated"]');
-                                    if (confirmButton) {
-                                        confirmButton.click();
-                                    }
-                                }, 100);
-                            }
-                        }, 100);
+                    if (!summary) {
+                        resolve(false);
+                        return;
                     }
+                    summary.click();
+                }
+
+                setTimeout(() => {
+                    const hideButton = detailsMenu.querySelector('button[value="hide"]');
+                    if (!hideButton) {
+                        resolve(false);
+                        return;
+                    }
+
+                    hideButton.click();
+
+                    setTimeout(() => {
+                        const confirmButton = document.querySelector('button[name="comment[state_event]"][value="outdated"]');
+                        if (confirmButton) {
+                            confirmButton.click();
+                            resolve(true);
+                        } else {
+                            resolve(false);
+                        }
+                    }, 150);
+                }, 150);
+            }, delay);
+        });
+    };
+
+    const processElements = async () => {
+        let delay = 0;
+
+        for (let discussion of discussions) {
+            const isResolved = discussion.getAttribute('data-resolved') === 'true';
+
+            if (isResolved && !hasUnresolvedChildDiscussions(discussion)) {
+                const success = await hideElement(discussion, delay);
+                if (success) {
+                    hiddenCount++;
+                    delay += 300;
                 }
             }
         }
-    });
+
+        for (let comment of regularComments) {
+            const isPartOfDiscussion = comment.closest('[data-review-thread="true"]');
+            if (!isPartOfDiscussion && !hasUnresolvedChildDiscussions(comment)) {
+                const success = await hideElement(comment, delay);
+                if (success) {
+                    hiddenCount++;
+                    delay += 300;
+                }
+            }
+        }
+    };
+
+    processElements();
 
     return hiddenCount;
 }
