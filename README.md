@@ -1,13 +1,13 @@
 # GitHub Discussions Enhancements
 
-Chrome extension that automatically expands all hidden discussions in GitHub Pull Requests.
+Chrome extension that provides advanced controls for managing GitHub Pull Request discussions.
 
 ## Features
 
 - **Auto-expand discussions** – Automatically clicks "Load more..." buttons to reveal all PR comments
-- **Hide resolved threads** – Keeps your view clean by hiding resolved conversations
-- **Toggle on/off** – Easy enable/disable per PR with one click
-- **Keyboard shortcut** – Use `Ctrl+B` (Windows/Linux) or `Cmd+B` (Mac) to toggle
+- **Resolve all discussions** – One-click resolution of all unresolved discussions
+- **Hide resolved threads** – Automatically hide resolved discussions and regular comments
+- **Control panel** – Easy-to-use UI panel in the lower right corner for managing all features
 
 ## Installation
 
@@ -18,12 +18,24 @@ Chrome extension that automatically expands all hidden discussions in GitHub Pul
 
 ## Usage
 
-By default, the extension is disabled. To activate it:
+When you open a Pull Request on GitHub, a control panel will appear in the lower right corner of the page with the following options:
 
-1. Open any Pull Request on GitHub
-2. Click the extension icon or press `Ctrl+B` / `Cmd+B`
-3. Badge will change from "OFF" to "ON"
-4. All hidden discussions will expand automatically
+### Auto Load More
+Toggle this switch to automatically load all hidden discussions by clicking "Load more..." buttons. The extension will continuously monitor for new "Load more..." buttons and click them automatically.
+
+### Resolve All
+Click this button to automatically resolve all unresolved discussions. The extension will:
+- Find all discussions that are not yet resolved
+- Click the "Resolve discussion" button for each one
+- Continue monitoring for newly loaded discussions and resolve them too
+- Run for up to 10 seconds to catch dynamically loaded content
+
+### Set as Hidden
+Click this button to hide resolved discussions and regular comments. The extension will:
+- Identify all resolved discussions and regular comments
+- Open the menu for each item and click "Hide" to mark it as outdated
+- Skip any parent elements that contain unresolved child discussions
+- Handle dynamically loaded content
 
 <img width="1440" alt="Extension activated on GitHub PR" src="https://github.com/Rawdogs-pl/chrome-github-extension/assets/1856485/66addedc-c758-4478-9cfe-ffe5b2ab00c7">
 
