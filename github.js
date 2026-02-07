@@ -100,6 +100,33 @@ function resolveAllDiscussions() {
     }, 10000);
 }
 
+// Helper function to wait for element to appear in DOM
+function waitFor(selector, scope = document, timeout = 5000) {
+    return new Promise((resolve) => {
+        if (scope.querySelector(selector)) {
+            return resolve(scope.querySelector(selector));
+        }
+
+        const observer = new MutationObserver((mutations, obs) => {
+            const element = scope.querySelector(selector);
+            if (element) {
+                obs.disconnect();
+                resolve(element);
+            }
+        });
+
+        observer.observe(scope, {
+            childList: true,
+            subtree: true
+        });
+
+        setTimeout(() => {
+            observer.disconnect();
+            resolve(scope.querySelector(selector));
+        }, timeout);
+    });
+}
+
 function hasUnresolvedChildDiscussions(element) {
     const childDiscussions = element.querySelectorAll('[data-review-thread="true"]');
     for (let discussion of childDiscussions) {
@@ -111,74 +138,110 @@ function hasUnresolvedChildDiscussions(element) {
 }
 
 function setAsHidden() {
-    const discussions = document.querySelectorAll('[data-review-thread="true"]');
-    const regularComments = document.querySelectorAll('.timeline-comment');
+    const processComments = async () => {
+        // Find all menu buttons using GitHub's actual selectors
+        const menuButtons = document.querySelectorAll(
+            '.timeline-comment-action.Link--secondary.Button--link.Button--medium.Button, summary.timeline-comment-action'
+        );
 
-    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+        console.log(`Found ${menuButtons.length} menu buttons.`);
 
-    const markElementAsOutdated = async (element, initialDelay = 0) => {
-        await delay(initialDelay);
+        for (let i = 0; i < menuButtons.length; i++) {
+            const menuBtn = menuButtons[i];
 
-        const detailsMenu = element.querySelector('details.discussion-timeline-actions');
-        if (!detailsMenu) {
-            return false;
-        }
-
-        if (!detailsMenu.open) {
-            const summary = detailsMenu.querySelector('summary');
-            if (!summary) {
-                return false;
+            // Skip PR description (body) - cannot be hidden
+            if (menuBtn.closest('.js-command-palette-pull-body')) {
+                console.log(`⏭️ (${i + 1}) Skipping: PR description (cannot be hidden).`);
+                continue;
             }
-            summary.click();
-        }
 
-        await delay(150);
-
-        const hideButton = detailsMenu.querySelector('button[value="hide"]');
-        if (!hideButton) {
-            return false;
-        }
-
-        hideButton.click();
-
-        await delay(150);
-
-        const modal = document.querySelector('[role="dialog"][aria-modal="true"]');
-        const confirmButton = modal ? modal.querySelector(GITHUB_OUTDATED_BUTTON_SELECTOR) : null;
-        if (confirmButton) {
-            confirmButton.click();
-            return true;
-        }
-
-        return false;
-    };
-
-    const processElements = async () => {
-        let delayMs = 0;
-
-        for (let discussion of discussions) {
-            const isResolved = discussion.getAttribute('data-resolved') === 'true';
-
-            if (isResolved && !hasUnresolvedChildDiscussions(discussion)) {
-                const success = await markElementAsOutdated(discussion, delayMs);
-                if (success) {
-                    delayMs += DOM_UPDATE_DELAY_MS;
+            // Skip threads with "Resolve conversation" - these are discussion threads
+            const threadContainer = menuBtn.closest('.js-inline-comments-container');
+            if (threadContainer) {
+                const hasResolveForm = threadContainer.querySelector('.js-resolvable-timeline-thread-form');
+                const hasResolveText = threadContainer.innerText.includes("Resolve conversation");
+                if (hasResolveForm || hasResolveText) {
+                    // Check if this thread is already resolved
+                    const discussionElement = threadContainer.closest('[data-review-thread="true"]');
+                    if (discussionElement && discussionElement.getAttribute('data-resolved') !== 'true') {
+                        console.log(`⏭️ (${i + 1}) Skipping: unresolved discussion thread.`);
+                        continue;
+                    }
+                    // If resolved, check for unresolved children
+                    if (discussionElement && hasUnresolvedChildDiscussions(discussionElement)) {
+                        console.log(`⏭️ (${i + 1}) Skipping: has unresolved child discussions.`);
+                        continue;
+                    }
                 }
             }
-        }
 
-        for (let comment of regularComments) {
-            const isPartOfDiscussion = comment.closest('[data-review-thread="true"]');
-            if (!isPartOfDiscussion && !hasUnresolvedChildDiscussions(comment)) {
-                const success = await markElementAsOutdated(comment, delayMs);
-                if (success) {
-                    delayMs += DOM_UPDATE_DELAY_MS;
+            // Find container
+            const container = menuBtn.closest('.timeline-comment-group') ||
+                              menuBtn.closest('.js-comment-container') ||
+                              menuBtn.closest('.timeline-comment');
+
+            if (!container) {
+                console.warn(`⚠️ (${i + 1}) No container found!`);
+                continue;
+            }
+
+            console.log(`(${i + 1}/${menuButtons.length}) Clicking menu "⋯"...`);
+            menuBtn.click(); // Triggers lazy loading from GitHub
+
+            // Wait for menu to load
+            const detailsMenu = menuBtn.parentElement.querySelector('details-menu');
+
+            // Wait for Hide button
+            const hideBtn = await waitFor(
+                'button.dropdown-item.js-comment-hide-button, button[aria-label="Hide comment"]',
+                detailsMenu || container,
+                5000
+            );
+
+            if (hideBtn) {
+                hideBtn.click();
+                console.log(`   -> (${i + 1}) Clicked "Hide comment"`);
+
+                // Wait for minimize form
+                const minimizeForm = await waitFor('.js-comment-minimize, form[action*="minimize"]', container, 2000);
+
+                if (minimizeForm) {
+                    const selectEl = minimizeForm.querySelector('select[name="classifier"]');
+                    if (selectEl) {
+                        selectEl.value = "OUTDATED";
+                        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+
+                        await new Promise(r => setTimeout(r, 200));
+
+                        minimizeForm.requestSubmit();
+                        console.log(`   ✅ (${i + 1}) Marked as "Outdated" and saved`);
+
+                        // Close menu
+                        if (menuBtn.closest('details[open]')) {
+                            menuBtn.click();
+                        }
+                    } else {
+                        console.warn(`   ⚠️ (${i + 1}) Form exists but no select element.`);
+                    }
+                } else {
+                    console.warn(`   ⚠️ (${i + 1}) Minimize form did not appear.`);
+                }
+            } else {
+                console.warn(`   ⏭️ (${i + 1}) No "Hide comment" option (or timeout). Skipping.`);
+
+                // Close menu to avoid clutter
+                if (menuBtn.closest('details[open]')) {
+                    menuBtn.click();
                 }
             }
+
+            // Wait between operations (rate limiting)
+            await new Promise(r => setTimeout(r, DOM_UPDATE_DELAY_MS));
         }
+        console.log("🏁 Finished processing.");
     };
 
-    processElements();
+    processComments();
 }
 
 function createControlPanel() {
