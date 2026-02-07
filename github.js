@@ -35,9 +35,6 @@ function stopAutoLoadMore() {
     }
 }
 
-/**
- * Function to trigger a re-request review from Copilot.
- */
 function triggerCopilotRerequest() {
     const copilotButton = document.getElementById('re-request-review-copilot-pull-request-reviewer');
 
@@ -46,9 +43,6 @@ function triggerCopilotRerequest() {
     }
 }
 
-/**
- * Updates the state of the Request Copilot review button based on Copilot button availability.
- */
 function updateCopilotButtonState() {
     const copilotButton = document.getElementById('re-request-review-copilot-pull-request-reviewer');
     const requestButton = document.getElementById('request-copilot-review-btn');
@@ -64,9 +58,6 @@ function updateCopilotButtonState() {
     }
 }
 
-/**
- * Starts monitoring DOM changes to update Copilot button state.
- */
 function startCopilotButtonMonitoring() {
     if (copilotButtonObserver) {
         copilotButtonObserver.disconnect();
@@ -82,14 +73,10 @@ function startCopilotButtonMonitoring() {
         }, 300);
     });
 
-    // Monitor the reviewers section
     const targetNode = document.querySelector('.js-discussion-sidebar-item') || document.body;
     copilotButtonObserver.observe(targetNode, { childList: true, subtree: true });
 }
 
-/**
- * Stops monitoring DOM changes for Copilot button.
- */
 function stopCopilotButtonMonitoring() {
     if (copilotButtonObserver) {
         copilotButtonObserver.disconnect();
