@@ -77,8 +77,17 @@ function resolveAllDiscussions() {
                                 const resolveBtn = thread.querySelector('.js-resolvable-timeline-thread-form button[value="resolve"]');
                                 if (resolveBtn) {
                                     resolveBtn.click();
-                                    processedThreads.add(thread);
                                     hasUnresolved = true;
+
+                                    // Only mark the thread as processed after confirming it was actually resolved
+                                    setTimeout(() => {
+                                        const isResolved = thread.getAttribute('data-resolved') === 'true';
+                                        const stillHasResolveBtn = !!thread.querySelector('.js-resolvable-timeline-thread-form button[value="resolve"]');
+
+                                        if (isResolved || !stillHasResolveBtn) {
+                                            processedThreads.add(thread);
+                                        }
+                                    }, DOM_UPDATE_DELAY_MS);
                                 }
                             }
                         });
