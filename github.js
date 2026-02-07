@@ -43,9 +43,6 @@ function triggerCopilotRerequest() {
 
     if (copilotButton) {
         copilotButton.click();
-        console.log('Clicked Re-request button for Copilot.');
-    } else {
-        console.warn('Re-request button for Copilot not found. Review may already be in progress.');
     }
 }
 
