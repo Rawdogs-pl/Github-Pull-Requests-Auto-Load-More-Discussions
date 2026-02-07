@@ -1,6 +1,7 @@
 let autoLoadMoreEnabled = false;
 let observer = null;
 let resolveDiscussionsObserver = null;
+let isHidingInProgress = false;
 
 const DOM_UPDATE_DELAY_MS = 300; // Delay between operations to allow DOM updates
 
@@ -21,9 +22,35 @@ function startAutoLoadMore() {
 
     observer = new MutationObserver((mutationsList) => {
         for (let mutation of mutationsList) {
-            if (mutation.type === 'childList') {
-                clickLoadMoreButtons();
+            if (mutation.type !== 'childList' || !mutation.addedNodes || mutation.addedNodes.length === 0) {
+                continue;
             }
+
+            mutation.addedNodes.forEach((node) => {
+                if (node.nodeType !== Node.ELEMENT_NODE) {
+                    return;
+                }
+
+                const element = node;
+
+                if (typeof element.matches === 'function' && element.matches('button.ajax-pagination-btn')) {
+                    const button = element;
+
+                    if (button.textContent && button.textContent.trim() === 'Load more…' && !button.disabled) {
+                        button.click();
+                    }
+                }
+
+                if (typeof element.querySelectorAll === 'function') {
+                    const nestedButtons = element.querySelectorAll('button.ajax-pagination-btn');
+
+                    nestedButtons.forEach((button) => {
+                        if (button.textContent && button.textContent.trim() === 'Load more…' && !button.disabled) {
+                            button.click();
+                        }
+                    });
+                }
+            });
         }
     });
 
@@ -163,6 +190,13 @@ function hasUnresolvedChildDiscussions(element) {
 }
 
 function setAsHidden() {
+    if (isHidingInProgress) {
+        console.log('⏭️ Set as Hidden is already running, ignoring subsequent call.');
+        return;
+    }
+
+    isHidingInProgress = true;
+
     const processComments = async () => {
         // Find all menu buttons using GitHub's actual selectors
         const menuButtons = document.querySelectorAll(
@@ -219,7 +253,7 @@ function setAsHidden() {
             menuBtn.click(); // Triggers lazy loading from GitHub
 
             // Wait for menu to load
-            const detailsMenu = menuBtn.parentElement.querySelector('details-menu');
+            const detailsMenu = menuBtn.parentElement?.querySelector('details-menu') || container.querySelector('details-menu');
 
             // Wait for Hide button
             const hideBtn = await waitFor(
@@ -269,9 +303,13 @@ function setAsHidden() {
             await new Promise(resolve => setTimeout(resolve, DOM_UPDATE_DELAY_MS));
         }
         console.log("🏁 Finished processing.");
+        isHidingInProgress = false;
     };
 
-    processComments();
+    processComments().catch((error) => {
+        console.error('Error in setAsHidden:', error);
+        isHidingInProgress = false;
+    });
 }
 
 function createControlPanel() {

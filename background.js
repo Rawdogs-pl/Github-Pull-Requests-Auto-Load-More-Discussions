@@ -21,8 +21,8 @@ const ICON_DISABLED = {
 chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     const url = changeInfo.url ?? tab.url;
 
-    if (changeInfo.status === 'complete' && url) {
-        const isGitHubPR = extensionPattern.test(url);
+    if (changeInfo.status === 'complete') {
+        const isGitHubPR = typeof url === 'string' && extensionPattern.test(url);
         if (isGitHubPR) {
             await chrome.action.setIcon({
                 tabId: tabId,
