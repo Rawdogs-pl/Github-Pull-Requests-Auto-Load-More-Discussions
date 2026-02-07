@@ -34,9 +34,17 @@ function stopAutoLoadMore() {
     }
 }
 function resolveAllDiscussions() {
-    const discussionButtons = document.querySelectorAll('.js-resolvable-timeline-thread-form button[value="resolve"]');
-    discussionButtons.forEach(btn => {
-        btn.click();
+    // Note: Text matching may not work in all GitHub language locales.
+    // We check for buttons starting with "Resolve " to cover most variations.
+    const forms = document.querySelectorAll('.js-resolvable-timeline-thread-form');
+    forms.forEach(form => {
+        const buttons = form.querySelectorAll('button[type="submit"]');
+        buttons.forEach(btn => {
+            const buttonText = btn.textContent.trim().toLowerCase();
+            if (buttonText === 'resolve conversation' || buttonText.startsWith('resolve ')) {
+                btn.click();
+            }
+        });
     });
 }
 
