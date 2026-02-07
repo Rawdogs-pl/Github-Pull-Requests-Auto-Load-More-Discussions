@@ -1,5 +1,9 @@
 let autoLoadMoreEnabled = false;
 let observer = null;
+let resolveDiscussionsInterval = null;
+
+const DOM_UPDATE_DELAY_MS = 300; // Delay between operations to allow DOM updates
+const GITHUB_OUTDATED_BUTTON_SELECTOR = 'button[name="comment[state_event]"][value="outdated"]';
 
 function clickLoadMoreButtons() {
     const buttons = document.querySelectorAll('button.ajax-pagination-btn');
@@ -36,6 +40,10 @@ function stopAutoLoadMore() {
 }
 
 function resolveAllDiscussions() {
+    if (resolveDiscussionsInterval) {
+        clearInterval(resolveDiscussionsInterval);
+    }
+
     const resolveButtons = document.querySelectorAll('button[value="resolve"], button[name="comment_and_resolve"]');
 
     resolveButtons.forEach(button => {
@@ -48,7 +56,7 @@ function resolveAllDiscussions() {
     let iterations = 0;
     const maxIterations = 20; // 20 iterations * 500ms = 10 seconds total timeout
 
-    const checkForNewDiscussions = setInterval(() => {
+    resolveDiscussionsInterval = setInterval(() => {
         iterations++;
         const newResolveButtons = document.querySelectorAll('button[value="resolve"], button[name="comment_and_resolve"]');
         let newResolved = 0;
@@ -62,7 +70,8 @@ function resolveAllDiscussions() {
         });
 
         if (newResolved === 0 || iterations >= maxIterations) {
-            clearInterval(checkForNewDiscussions);
+            clearInterval(resolveDiscussionsInterval);
+            resolveDiscussionsInterval = null;
         }
     }, 500);
 }
@@ -111,7 +120,7 @@ function setAsHidden() {
         await delay(150);
 
         const modal = document.querySelector('[role="dialog"][aria-modal="true"]');
-        const confirmButton = modal ? modal.querySelector('button[name="comment[state_event]"][value="outdated"]') : null;
+        const confirmButton = modal ? modal.querySelector(GITHUB_OUTDATED_BUTTON_SELECTOR) : null;
         if (confirmButton) {
             confirmButton.click();
             return true;
@@ -129,7 +138,7 @@ function setAsHidden() {
             if (isResolved && !hasUnresolvedChildDiscussions(discussion)) {
                 const success = await markElementAsOutdated(discussion, delayMs);
                 if (success) {
-                    delayMs += 300; // Add delay between operations to allow DOM updates
+                    delayMs += DOM_UPDATE_DELAY_MS;
                 }
             }
         }
@@ -139,7 +148,7 @@ function setAsHidden() {
             if (!isPartOfDiscussion && !hasUnresolvedChildDiscussions(comment)) {
                 const success = await markElementAsOutdated(comment, delayMs);
                 if (success) {
-                    delayMs += 300; // Add delay between operations to allow DOM updates
+                    delayMs += DOM_UPDATE_DELAY_MS;
                 }
             }
         }
@@ -279,12 +288,10 @@ function createControlPanel() {
 
     resolveAllBtn.addEventListener('click', () => {
         resolveAllDiscussions();
-        console.log('Resolving all discussions...');
     });
 
     setHiddenBtn.addEventListener('click', () => {
         setAsHidden();
-        console.log('Hiding resolved items...');
     });
 }
 
