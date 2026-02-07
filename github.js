@@ -77,8 +77,12 @@ function startCopilotButtonMonitoring() {
 
     updateCopilotButtonState();
 
+    let debounceTimer;
     copilotButtonObserver = new MutationObserver(() => {
-        updateCopilotButtonState();
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => {
+            updateCopilotButtonState();
+        }, 300);
     });
 
     // Monitor the reviewers section or fallback to body if not found
