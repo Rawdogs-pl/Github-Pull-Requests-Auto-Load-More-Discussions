@@ -81,7 +81,7 @@ function setAsHidden() {
     const discussions = document.querySelectorAll('[data-review-thread="true"]');
     const regularComments = document.querySelectorAll('.timeline-comment');
 
-    const hideElement = async (element, delay = 0) => {
+    const markElementAsOutdated = async (element, delay = 0) => {
         return new Promise((resolve) => {
             setTimeout(() => {
                 const detailsMenu = element.querySelector('details.discussion-timeline-actions');
@@ -109,7 +109,8 @@ function setAsHidden() {
                     hideButton.click();
 
                     setTimeout(() => {
-                        const confirmButton = document.querySelector('button[name="comment[state_event]"][value="outdated"]');
+                        const modal = document.querySelector('[role="dialog"]');
+                        const confirmButton = modal ? modal.querySelector('button[name="comment[state_event]"][value="outdated"]') : null;
                         if (confirmButton) {
                             confirmButton.click();
                             resolve(true);
@@ -129,7 +130,7 @@ function setAsHidden() {
             const isResolved = discussion.getAttribute('data-resolved') === 'true';
 
             if (isResolved && !hasUnresolvedChildDiscussions(discussion)) {
-                const success = await hideElement(discussion, delay);
+                const success = await markElementAsOutdated(discussion, delay);
                 if (success) {
                     delay += 300;
                 }
@@ -139,7 +140,7 @@ function setAsHidden() {
         for (let comment of regularComments) {
             const isPartOfDiscussion = comment.closest('[data-review-thread="true"]');
             if (!isPartOfDiscussion && !hasUnresolvedChildDiscussions(comment)) {
-                const success = await hideElement(comment, delay);
+                const success = await markElementAsOutdated(comment, delay);
                 if (success) {
                     delay += 300;
                 }
@@ -262,19 +263,19 @@ function createControlPanel() {
             autoLoadToggle.classList.add('active');
             startAutoLoadMore();
         }
-    });
 
-    autoLoadToggle.addEventListener('click', () => {
-        autoLoadMoreEnabled = !autoLoadMoreEnabled;
-        chrome.storage.local.set({ autoLoadMoreEnabled });
+        autoLoadToggle.addEventListener('click', () => {
+            autoLoadMoreEnabled = !autoLoadMoreEnabled;
+            chrome.storage.local.set({ autoLoadMoreEnabled });
 
-        if (autoLoadMoreEnabled) {
-            autoLoadToggle.classList.add('active');
-            startAutoLoadMore();
-        } else {
-            autoLoadToggle.classList.remove('active');
-            stopAutoLoadMore();
-        }
+            if (autoLoadMoreEnabled) {
+                autoLoadToggle.classList.add('active');
+                startAutoLoadMore();
+            } else {
+                autoLoadToggle.classList.remove('active');
+                stopAutoLoadMore();
+            }
+        });
     });
 
     resolveAllBtn.addEventListener('click', () => {
