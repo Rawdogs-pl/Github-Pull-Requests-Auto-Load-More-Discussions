@@ -37,5 +37,11 @@ Click this button to hide resolved discussions and regular comments. The extensi
 - Skip any parent elements that contain unresolved child discussions
 - Handle dynamically loaded content
 
-<img width="1440" alt="Extension activated on GitHub PR" src="https://github.com/Rawdogs-pl/chrome-github-extension/assets/1856485/66addedc-c758-4478-9cfe-ffe5b2ab00c7">
+## Screenshot
+
+<img width="1280" alt="Control panel in the lower right corner" src="https://github.com/user-attachments/assets/51c82c41-3491-45c0-a8ec-df2cef192026">
+
+Toggle enabled:
+
+<img width="1280" alt="Control panel with toggle enabled" src="https://github.com/user-attachments/assets/8e46b2b7-c88d-4a17-8a15-90fe2e15c248">
 
