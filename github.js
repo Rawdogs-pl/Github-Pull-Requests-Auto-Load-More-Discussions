@@ -46,7 +46,7 @@ function resolveAllDiscussions() {
     });
 
     let iterations = 0;
-    const maxIterations = 20;
+    const maxIterations = 20; // 20 iterations * 500ms = 10 seconds total timeout
 
     const checkForNewDiscussions = setInterval(() => {
         iterations++;
@@ -81,58 +81,55 @@ function setAsHidden() {
     const discussions = document.querySelectorAll('[data-review-thread="true"]');
     const regularComments = document.querySelectorAll('.timeline-comment');
 
-    const markElementAsOutdated = async (element, delay = 0) => {
-        return new Promise((resolve) => {
-            setTimeout(() => {
-                const detailsMenu = element.querySelector('details.discussion-timeline-actions');
-                if (!detailsMenu) {
-                    resolve(false);
-                    return;
-                }
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-                if (!detailsMenu.open) {
-                    const summary = detailsMenu.querySelector('summary');
-                    if (!summary) {
-                        resolve(false);
-                        return;
-                    }
-                    summary.click();
-                }
+    const markElementAsOutdated = async (element, initialDelay = 0) => {
+        await delay(initialDelay);
 
-                setTimeout(() => {
-                    const hideButton = detailsMenu.querySelector('button[value="hide"]');
-                    if (!hideButton) {
-                        resolve(false);
-                        return;
-                    }
+        const detailsMenu = element.querySelector('details.discussion-timeline-actions');
+        if (!detailsMenu) {
+            return false;
+        }
 
-                    hideButton.click();
+        if (!detailsMenu.open) {
+            const summary = detailsMenu.querySelector('summary');
+            if (!summary) {
+                return false;
+            }
+            summary.click();
+        }
 
-                    setTimeout(() => {
-                        const modal = document.querySelector('[role="dialog"]');
-                        const confirmButton = modal ? modal.querySelector('button[name="comment[state_event]"][value="outdated"]') : null;
-                        if (confirmButton) {
-                            confirmButton.click();
-                            resolve(true);
-                        } else {
-                            resolve(false);
-                        }
-                    }, 150);
-                }, 150);
-            }, delay);
-        });
+        await delay(150);
+
+        const hideButton = detailsMenu.querySelector('button[value="hide"]');
+        if (!hideButton) {
+            return false;
+        }
+
+        hideButton.click();
+
+        await delay(150);
+
+        const modal = document.querySelector('[role="dialog"][aria-modal="true"]');
+        const confirmButton = modal ? modal.querySelector('button[name="comment[state_event]"][value="outdated"]') : null;
+        if (confirmButton) {
+            confirmButton.click();
+            return true;
+        }
+
+        return false;
     };
 
     const processElements = async () => {
-        let delay = 0;
+        let delayMs = 0;
 
         for (let discussion of discussions) {
             const isResolved = discussion.getAttribute('data-resolved') === 'true';
 
             if (isResolved && !hasUnresolvedChildDiscussions(discussion)) {
-                const success = await markElementAsOutdated(discussion, delay);
+                const success = await markElementAsOutdated(discussion, delayMs);
                 if (success) {
-                    delay += 300;
+                    delayMs += 300; // Add delay between operations to allow DOM updates
                 }
             }
         }
@@ -140,9 +137,9 @@ function setAsHidden() {
         for (let comment of regularComments) {
             const isPartOfDiscussion = comment.closest('[data-review-thread="true"]');
             if (!isPartOfDiscussion && !hasUnresolvedChildDiscussions(comment)) {
-                const success = await markElementAsOutdated(comment, delay);
+                const success = await markElementAsOutdated(comment, delayMs);
                 if (success) {
-                    delay += 300;
+                    delayMs += 300; // Add delay between operations to allow DOM updates
                 }
             }
         }
@@ -257,25 +254,27 @@ function createControlPanel() {
     const resolveAllBtn = document.getElementById('resolve-all-btn');
     const setHiddenBtn = document.getElementById('set-hidden-btn');
 
+    // Initialize toggle state from storage
     chrome.storage.local.get(['autoLoadMoreEnabled'], (result) => {
         autoLoadMoreEnabled = result.autoLoadMoreEnabled || false;
         if (autoLoadMoreEnabled) {
             autoLoadToggle.classList.add('active');
             startAutoLoadMore();
         }
+    });
 
-        autoLoadToggle.addEventListener('click', () => {
-            autoLoadMoreEnabled = !autoLoadMoreEnabled;
-            chrome.storage.local.set({ autoLoadMoreEnabled });
+    // Attach event listeners
+    autoLoadToggle.addEventListener('click', () => {
+        autoLoadMoreEnabled = !autoLoadMoreEnabled;
+        chrome.storage.local.set({ autoLoadMoreEnabled });
 
-            if (autoLoadMoreEnabled) {
-                autoLoadToggle.classList.add('active');
-                startAutoLoadMore();
-            } else {
-                autoLoadToggle.classList.remove('active');
-                stopAutoLoadMore();
-            }
-        });
+        if (autoLoadMoreEnabled) {
+            autoLoadToggle.classList.add('active');
+            startAutoLoadMore();
+        } else {
+            autoLoadToggle.classList.remove('active');
+            stopAutoLoadMore();
+        }
     });
 
     resolveAllBtn.addEventListener('click', () => {
