@@ -36,9 +36,7 @@ function stopAutoLoadMore() {
 function resolveAllDiscussions() {
     const discussionButtons = document.querySelectorAll('.js-resolvable-timeline-thread-form button[value="resolve"]');
     discussionButtons.forEach(btn => {
-        if (btn.textContent.includes('Resolve conversation')) {
-            btn.click();
-        }
+        btn.click();
     });
 }
 
