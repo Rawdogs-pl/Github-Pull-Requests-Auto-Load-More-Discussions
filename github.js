@@ -51,8 +51,8 @@ function resolveAllDiscussions() {
         }
     };
 
-    // Resolve all currently visible discussions
-    const resolveButtons = document.querySelectorAll('button[value="resolve"], button[name="comment_and_resolve"]');
+    // Resolve all currently visible discussions - scope to resolvable thread forms to avoid comment submission buttons
+    const resolveButtons = document.querySelectorAll('.js-resolvable-timeline-thread-form button[value="resolve"]');
     resolveButtons.forEach(resolveButton);
 
     // Set up MutationObserver to handle dynamically loaded discussions
@@ -74,7 +74,7 @@ function resolveAllDiscussions() {
 
                         threads.forEach(thread => {
                             if (!processedThreads.has(thread) && thread.getAttribute('data-resolved') !== 'true') {
-                                const resolveBtn = thread.querySelector('button[value="resolve"], button[name="comment_and_resolve"]');
+                                const resolveBtn = thread.querySelector('.js-resolvable-timeline-thread-form button[value="resolve"]');
                                 if (resolveBtn) {
                                     resolveBtn.click();
                                     processedThreads.add(thread);
@@ -200,6 +200,12 @@ function setAsHidden() {
                 continue;
             }
 
+            // Skip any parent container that has unresolved child discussions
+            if (hasUnresolvedChildDiscussions(container)) {
+                console.log(`⏭️ (${i + 1}) Skipping: container has unresolved child discussions.`);
+                continue;
+            }
+
             console.log(`(${i + 1}/${menuButtons.length}) Clicking menu "⋯"...`);
             menuBtn.click(); // Triggers lazy loading from GitHub
 
@@ -267,92 +273,6 @@ function createControlPanel() {
     const panel = document.createElement('div');
     panel.id = 'github-pr-control-panel';
     panel.innerHTML = `
-        <style>
-            #github-pr-control-panel {
-                position: fixed;
-                bottom: 20px;
-                right: 20px;
-                background: #ffffff;
-                border: 1px solid #d0d7de;
-                border-radius: 6px;
-                padding: 16px;
-                box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);
-                z-index: 9999;
-                min-width: 250px;
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            }
-            #github-pr-control-panel h3 {
-                margin: 0 0 12px 0;
-                font-size: 14px;
-                font-weight: 600;
-                color: #24292f;
-            }
-            #github-pr-control-panel .control-item {
-                margin-bottom: 12px;
-                display: flex;
-                align-items: center;
-                justify-content: space-between;
-            }
-            #github-pr-control-panel .control-item:last-child {
-                margin-bottom: 0;
-            }
-            #github-pr-control-panel label,
-            #github-pr-control-panel span {
-                font-size: 12px;
-                color: #57606a;
-                margin-right: 8px;
-            }
-            #github-pr-control-panel .toggle-switch {
-                position: relative;
-                width: 40px;
-                height: 20px;
-                background-color: #d0d7de;
-                border-radius: 10px;
-                cursor: pointer;
-                transition: background-color 0.2s;
-                border: none;
-                padding: 0;
-            }
-            #github-pr-control-panel .toggle-switch:focus {
-                outline: 2px solid #0969da;
-                outline-offset: 2px;
-            }
-            #github-pr-control-panel .toggle-switch.active {
-                background-color: #2da44e;
-            }
-            #github-pr-control-panel .toggle-switch::after {
-                content: '';
-                position: absolute;
-                top: 2px;
-                left: 2px;
-                width: 16px;
-                height: 16px;
-                background-color: white;
-                border-radius: 50%;
-                transition: transform 0.2s;
-            }
-            #github-pr-control-panel .toggle-switch.active::after {
-                transform: translateX(20px);
-            }
-            #github-pr-control-panel button {
-                width: 100%;
-                padding: 6px 12px;
-                font-size: 12px;
-                font-weight: 500;
-                color: #24292f;
-                background-color: #f6f8fa;
-                border: 1px solid #d0d7de;
-                border-radius: 6px;
-                cursor: pointer;
-                transition: background-color 0.2s;
-            }
-            #github-pr-control-panel button:hover {
-                background-color: #f3f4f6;
-            }
-            #github-pr-control-panel button:active {
-                background-color: #ebecf0;
-            }
-        </style>
         <h3>PR Discussions Control</h3>
         <div class="control-item">
             <span id="auto-load-label">Auto Load More</span>
