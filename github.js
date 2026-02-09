@@ -76,42 +76,26 @@ async function requestCopilotReview() {
         }
 
         // 4. Czekaj na opcję i kliknij
-        const waitForCopilotElement = (timeout = 5000) => {
+        const waitForElement = (className, text, timeout = 5000) => {
             return new Promise((resolve, reject) => {
                 const startTime = Date.now();
                 const interval = setInterval(() => {
-                    let target = null;
-
-                    // Prefer stable identifiers where possible
-                    target = document.querySelector('[data-card-url*="/github-copilot"]');
-                    if (!target) {
-                        target = document.querySelector('input[value="github-copilot"]');
-                    }
-                    if (!target) {
-                        target = document.querySelector('a[href*="/github-copilot"]');
-                    }
-
-                    // Fallback: match by visible text only as a last resort
-                    if (!target) {
-                        const elements = document.getElementsByClassName('js-extended-description');
-                        target = Array.from(elements).find(el =>
-                            el.textContent.includes('Your AI Pair Programmer') &&
-                            (el.offsetParent !== null || el.getClientRects().length > 0)
-                        );
-                    }
-
+                    const elements = document.getElementsByClassName(className);
+                    const target = Array.from(elements).find(el =>
+                        el.textContent.includes(text) && (el.offsetParent !== null || el.getClientRects().length > 0)
+                    );
                     if (target) {
                         clearInterval(interval);
                         resolve(target);
                     } else if (Date.now() - startTime > timeout) {
                         clearInterval(interval);
-                        reject(new Error("Nie znaleziono: GitHub Copilot"));
+                        reject(new Error("Nie znaleziono: " + text));
                     }
                 }, 150);
             });
         };
 
-        const targetElement = await waitForCopilotElement();
+        const targetElement = await waitForElement('js-extended-description', 'Your AI Pair Programmer');
         simulateFullInteraction(targetElement);
         console.log("3. Wybrano opcję.");
 
@@ -199,47 +183,20 @@ function triggerMarkAsReady() {
     }
 }
 
-function isVisibleElement(element) {
-    if (!element) {
-        return false;
-    }
-
-    if (element.offsetParent === null) {
-        return false;
-    }
-
-    const rects = element.getClientRects();
-    return rects.length > 0 && rects[0].width > 0 && rects[0].height > 0;
-}
-
 function findReadyForReviewButton() {
-    // Szukamy widocznego przycisku "Ready for review" na stronie GitHub, korzystając ze stabilniejszych selektorów
-    const selector = 'form[action*="ready_for_review"] button, button[aria-label="Ready for review"], button[data-disable-with*="Ready for review"]';
-
-    // Najpierw próbujemy znaleźć przycisk w nagłówku PR
-    const headerActions = document.querySelector('.gh-header-actions');
-    if (headerActions) {
-        const scopedButtons = headerActions.querySelectorAll(selector);
-        for (const button of scopedButtons) {
-            if (isVisibleElement(button)) {
-                return button;
-            }
-        }
-    }
-
-    // Fallback: szukamy globalnie, ale nadal tylko po stabilniejszych atrybutach
-    const buttons = document.querySelectorAll(selector);
+    // Szukamy przycisku "Ready for review" na stronie GitHub
+    const buttons = document.querySelectorAll('button');
     for (const button of buttons) {
-        if (isVisibleElement(button)) {
+        if (button.textContent.trim().includes('Ready for review')) {
             return button;
         }
     }
-
     return null;
 }
 
 function updateMarkAsReadyButtonState() {
     const readyButton = findReadyForReviewButton();
+    const markAsReadyBtn = document.getElementById('mark-as-ready-btn');
     const markAsReadyItem = document.getElementById('mark-as-ready-item');
 
     if (markAsReadyItem) {
@@ -266,8 +223,7 @@ function startReadyForReviewMonitoring() {
         }, 300);
     });
 
-    // Obserwujemy bardziej ukierunkowany obszar zamiast całego document.body
-    const targetNode = document.querySelector('.gh-header-actions') || document.querySelector('.js-discussion') || document.body;
+    const targetNode = document.body;
     readyForReviewObserver.observe(targetNode, { childList: true, subtree: true });
 }
 
