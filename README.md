@@ -1,4 +1,4 @@
-# GitHub Pull Request Discussions Auto Load More
+# GitHub Pull Requests Code Review Enhancements
 
 Chrome extension that provides advanced batch operations and controls for managing GitHub Pull Request discussions.
 
