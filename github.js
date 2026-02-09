@@ -37,7 +37,7 @@ function stopAutoLoadMore() {
 }
 
 async function requestCopilotReview() {
-    console.log("%c--- Start skryptu (Tryb: Zamknięcie Warstwy) ---", "color: purple; font-weight: bold;");
+    console.log("%c--- Script Start (Mode: Close Layer) ---", "color: purple; font-weight: bold;");
 
     const wait = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -54,28 +54,28 @@ async function requestCopilotReview() {
     };
 
     try {
-        // 1. Znajdź menu i przycisk sterujący
+        // 1. Find menu and control button
         const menuContainer = document.getElementById('reviewers-select-menu');
-        if (!menuContainer) throw new Error("Nie znaleziono #reviewers-select-menu");
+        if (!menuContainer) throw new Error("Element #reviewers-select-menu not found");
 
-        // Szukamy elementu otwierającego (często to <summary> lub <button>)
+        // Look for the opening element (often <summary> or <button>)
         const trigger = menuContainer.querySelector('summary') || menuContainer.querySelector('button') || menuContainer;
 
-        // 2. Otwórz menu
+        // 2. Open menu
         const icon = menuContainer.querySelector('svg');
         simulateFullInteraction(icon || trigger);
-        console.log("1. Menu otwarte.");
+        console.log("1. Menu opened.");
 
-        // 3. Fokus na filtrze
+        // 3. Focus on filter
         await wait(500);
         const filterField = document.getElementById('review-filter-field');
         if (filterField) {
             simulateFullInteraction(filterField);
             filterField.dispatchEvent(new InputEvent('input', { bubbles: true }));
-            console.log("2. Filtr aktywowany.");
+            console.log("2. Filter activated.");
         }
 
-        // 4. Czekaj na opcję i kliknij
+        // 4. Wait for option and click
         const waitForElement = (className, text, timeout = 5000) => {
             return new Promise((resolve, reject) => {
                 const startTime = Date.now();
@@ -89,7 +89,7 @@ async function requestCopilotReview() {
                         resolve(target);
                     } else if (Date.now() - startTime > timeout) {
                         clearInterval(interval);
-                        reject(new Error("Nie znaleziono: " + text));
+                        reject(new Error("Not found: " + text));
                     }
                 }, 150);
             });
@@ -97,32 +97,32 @@ async function requestCopilotReview() {
 
         const targetElement = await waitForElement('js-extended-description', 'Your AI Pair Programmer');
         simulateFullInteraction(targetElement);
-        console.log("3. Wybrano opcję.");
+        console.log("3. Option selected.");
 
-        // --- KLUCZOWA CZĘŚĆ: UKRYWANIE WARSTWY ---
-        await wait(600); // Dajmy stronie chwilę na zapisanie wyboru
+        // --- KEY SECTION: HIDE LAYER ---
+        await wait(600); // Give the page a moment to save the selection
 
-        console.log("4. Próba ukrycia warstwy...");
+        console.log("4. Attempting to hide layer...");
 
-        // Metoda A: Jeśli to GitHubowy <details>, zamknij go atrybutem
+        // Method A: If it's a GitHub <details>, close it via attribute
         const detailsParent = menuContainer.closest('details');
         if (detailsParent) {
             detailsParent.removeAttribute('open');
-            console.log("-> Zamknięto przez atrybut 'open'.");
+            console.log("-> Closed via 'open' attribute.");
         }
 
-        // Metoda B: Ponowne kliknięcie w trigger (toggle off)
+        // Method B: Re-click trigger (toggle off)
         simulateFullInteraction(trigger);
 
-        // Metoda C: Wysłanie Escape bezpośrednio do pola filtra
+        // Method C: Send Escape directly to filter field
         if (filterField) {
             filterField.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
         }
 
-        console.log("%c5. Gotowe! Warstwa powinna zniknąć.", "color: green; font-weight: bold;");
+        console.log("%c5. Done! Layer should disappear.", "color: green; font-weight: bold;");
 
     } catch (error) {
-        console.error("%cBłąd: " + error.message, "color: red;");
+        console.error("%cError: " + error.message, "color: red;");
     }
 }
 
@@ -184,7 +184,7 @@ function triggerMarkAsReady() {
 }
 
 function findReadyForReviewButton() {
-    // Szukamy przycisku "Ready for review" na stronie GitHub
+    // Search for "Ready for review" button on GitHub page
     const buttons = document.querySelectorAll('button');
     for (const button of buttons) {
         if (button.textContent.trim().includes('Ready for review')) {
