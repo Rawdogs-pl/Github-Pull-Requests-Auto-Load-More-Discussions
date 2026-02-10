@@ -2,6 +2,9 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ autoLoadMoreEnabled: false });
 });
 
+// Pattern matches PR URLs: https://github.com/{owner}/{repo}/pull/{number}
+// This ensures extension only activates on actual PR pages, not agents pages
+// Note: This pattern is duplicated in github.js for content script validation
 const extensionPattern = /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/;
 
 const ICON_NORMAL = {
