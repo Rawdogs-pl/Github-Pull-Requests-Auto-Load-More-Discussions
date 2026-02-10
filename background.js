@@ -2,7 +2,7 @@ chrome.runtime.onInstalled.addListener(() => {
     chrome.storage.local.set({ autoLoadMoreEnabled: false });
 });
 
-const extensionPattern = /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\//;
+const extensionPattern = /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/;
 
 const ICON_NORMAL = {
     "16": "images/icon.png",
