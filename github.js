@@ -348,10 +348,8 @@ async function setAsHidden() {
 
 function createControlPanel() {
     // Only create panel on actual PR pages, not on agents pages
-    // Pattern matches: https://github.com/{owner}/{repo}/pull/{number}
-    // Note: This pattern is duplicated in background.js for icon state management
-    const prPattern = /^https:\/\/github\.com\/[^\/]+\/[^\/]+\/pull\/\d+/;
-    if (!prPattern.test(window.location.href)) {
+    // Uses shared URL matcher from urlMatchers.js
+    if (!isGitHubPRPage(window.location.pathname)) {
         return;
     }
 

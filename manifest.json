@@ -25,7 +25,7 @@
   "content_scripts": [
     {
       "matches": ["https://github.com/*/*/pull/*"],
-      "js": ["github.js"],
+      "js": ["urlMatchers.js", "github.js"],
       "css": ["panel.css"]
     }
   ]
